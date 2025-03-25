@@ -3,6 +3,7 @@
 # Import for the Web Bot
 from botcity.web import WebBot, Browser, By
 import time
+import tempfile
 import requests
 
 from botcity.web import By
@@ -21,42 +22,44 @@ import whisper
 # Carrega o modelo de IA uma vez (evitar recarregar múltiplas vezes)
 model = whisper.load_model("base")  # Pode usar "small" ou "tiny" para menos recursos
 
-def download_audio(url):
-    """Baixa o arquivo de áudio do desafio"""
+def download_audio(url, filename="audio.mp3"):
+    """Baixa um arquivo de áudio de uma URL e salva localmente"""
+    if not url.startswith("http"):
+        print("URL inválida!")
+        return None
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        return response.content
+
+        with open(filename, "wb") as file:
+            file.write(response.content)
+
+        print(f"Áudio salvo como {filename}")
+        return filename
     except requests.RequestException as e:
-        print(f"Erro ao baixar áudio: {str(e)}")
+        print(f"Erro ao baixar áudio: {e}")
         return None
 
 def transcribe(audio_content):
-    """Transcreve o áudio usando Whisper"""
-    try:
-        # Salva temporariamente o arquivo de áudio
-        temp_file = "temp_audio.mp3"
-        with open(temp_file, "wb") as f:
-            f.write(audio_content)
-        
-        # Transcreve usando Whisper
-        result = model.transcribe(temp_file)
-        
-        # Remove o arquivo temporário
-        os.remove(temp_file)
-        
-        return result["text"].strip().upper()  # Retorna em maiúsculas para o CAPTCHA
-    except Exception as e:
-        print(f"Erro na transcrição: {str(e)}")
-        return None
+
+    model = whisper.load_model("base")
+    resposta = model.transcribe(audio_content)
+    return resposta['text']
+
 
 def solve_audio_captcha(driver):
     """Resolve completamente o desafio de áudio do reCAPTCHA"""
     try:
         # 1. Localiza o elemento de áudio
         audio_source = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "audio-source"))
+            EC.presence_of_element_located((By.CLASS_NAME, "rc-audiochallenge-tdownload"))
         )
+        print('link do audio',audio_source.get_attribute('src'))
         audio_url = audio_source.get_attribute('src')
         
         # 2. Baixa o áudio
@@ -141,20 +144,22 @@ def main():
     bot.browser = Browser.CHROME
 
     # Uncomment to set the WebDriver path
-    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64\chromedriver.exe"
+    #bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64\chromedriver.exe"
+    bot.driver_path ="/home/vitor/Documents/Projetos/Botcity_web/chromedriver-linux64/chromedriver"
 
-    bot.browse("https://www.google.com/recaptcha/api2/demo")
+    bot.browse("http://www.sintegra.es.gov.br/index.php")
 
-    #CNPJ = bot.find_element(selector='num_cnpj', by=By.ID)
-    #CNPJ.click()
-    #CNPJ.send_keys('33.048.204/0001-51')
+    CNPJ = bot.find_element(selector='num_cnpj', by=By.ID)
+    CNPJ.click()
+    CNPJ.send_keys('33.048.204/0001-51')
+
 
     bot.find_element(selector=".//iframe[@title='reCAPTCHA']",by=By.XPATH).click()
-
+#
     time.sleep(5)
     if request_audio_version(bot.driver):
         print("Desafio de áudio solicitado com sucesso!")
-
+#
         if solve_audio_captcha(bot.driver):
             print("CAPTCHA resolvido com sucesso!")
             
@@ -170,7 +175,7 @@ def main():
 
 
 
-    input()
+   
 
     bot.find_element(selector='botaoConsultar', by=By.ID).click()
 
@@ -182,7 +187,7 @@ def main():
 
 
     # Wait 3 seconds before closing
-    #bot.wait(3000)
+    bot.wait(3000)
 
     # Finish and clean up the Web Browser
     # You MUST invoke the stop_browser to avoid
