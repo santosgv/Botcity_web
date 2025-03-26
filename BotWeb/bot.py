@@ -238,18 +238,15 @@ def estado_mg(CNPJ):
     form.click()
     form.send_keys(CNPJ)
 
-    time.sleep(20)
+    time.sleep(15)
     bot.find_element(selector='BtnPesquisarCodInscrMf',by=By.ID).click()
   
     
 
-    elemento_tabela = bot.find_element("ListaContribuintes", By.ID)
-    dados_tabela = table_to_dict(table=elemento_tabela)
+    DADOS = bot.find_elements("tabContribuinte", By.ID)
 
-    print(dados_tabela)
-
-    for linha in dados_tabela:
-        print(f'''{linha}
+    for linha in DADOS:
+        print(f'''{linha.text}
     ''')
 
     
