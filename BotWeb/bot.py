@@ -8,117 +8,34 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from botcity.web.util import element_as_select
 from botcity.web.parsers import table_to_dict
+import os
+import datetime
+import shutil
+import logging
 
+logger = logging.getLogger(__name__)
 
 from botcity.maestro import *
 
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
-import whisper
+def arquivos_modificados_hoje(diretorio):
+    logging.basicConfig(filename='Arquivos_modificados.log', level=logging.INFO)
+    logger.info('Inicio...')
 
-# Carrega o modelo de IA uma vez (evitar recarregar múltiplas vezes)
-model = whisper.load_model("base")  # Pode usar "small" ou "tiny" para menos recursos
+    hoje = datetime.date.today()
+    arquivos_hoje = []
 
-def download_audio(url, filename="audio.mp3"):
-    """Baixa um arquivo de áudio de uma URL e salva localmente"""
-    if not url.startswith("http"):
-        print("URL inválida!")
-        return None
+    for arquivo in os.listdir(diretorio):
+        caminho_completo = os.path.join(diretorio, arquivo)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+        if os.path.isfile(caminho_completo):
+            data_modificacao = datetime.date.fromtimestamp(os.path.getmtime(caminho_completo))
+            if data_modificacao == hoje:
+                arquivos_hoje.append(caminho_completo)
 
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-
-        with open(filename, "wb") as file:
-            file.write(response.content)
-
-        print(f"Áudio salvo como {filename}")
-        return filename
-    except requests.RequestException as e:
-        print(f"Erro ao baixar áudio: {e}")
-        return None
-
-def transcribe(audio_content):
-
-    model = whisper.load_model("base")
-    resposta = model.transcribe(audio_content)
-    return resposta['text']
-
-def solve_audio_captcha(driver):
-    """Resolve completamente o desafio de áudio do reCAPTCHA"""
-    try:
-        # 1. Localiza o elemento de áudio
-        audio_source = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "rc-audiochallenge-tdownload"))
-        )
-        print('link do audio',audio_source.get_attribute('src'))
-        audio_url = audio_source.get_attribute('src')
-        
-        # 2. Baixa o áudio
-        audio_content = download_audio(audio_url)
-        if not audio_content:
-            return False
-        
-        # 3. Transcreve o áudio
-        transcription = transcribe(audio_content)
-        if not transcription:
-            return False
-        
-        print(f"Texto transcrito: {transcription}")
-        
-        # 4. Preenche a resposta
-        audio_response = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "audio-response"))
-        )
-        audio_response.clear()
-        audio_response.send_keys(transcription)
-        
-        # 5. Clica no botão de verificação
-        verify_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "recaptcha-verify-button"))
-        )
-        verify_button.click()
-        
-        return True
-        
-    except TimeoutException:
-        print("Tempo limite excedido ao localizar elementos do CAPTCHA.")
-        return False
-    except Exception as e:
-        print(f"Erro inesperado ao resolver CAPTCHA: {str(e)}")
-        return False
-
-def request_audio_version(driver):
-    try:
-        driver.switch_to.default_content()
-        
-        # Aguarda até 10 segundos pelo iframe do desafio
-        challenge_frame = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//iframe[contains(@title, 'desafio') or contains(@title, 'challenge')]")
-            )
-        )
-        driver.switch_to.frame(challenge_frame)
-        
-        # Aguarda até 10 segundos pelo botão de áudio
-        audio_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "recaptcha-audio-button"))
-        )
-        audio_button.click()
-        
-        driver.switch_to.default_content()
-        return True
-        
-    except TimeoutException:
-        print("Tempo limite excedido ao localizar elemento.")
-        return False
-    except Exception as e:
-        print(f"Erro: {str(e)}")
-        return False
+    logger.info(f'Arquivos na data de {hoje}/{arquivos_hoje}')
+    return arquivos_hoje
 
 def estado_es(CNPJ):
     bot = WebBot()
@@ -129,7 +46,7 @@ def estado_es(CNPJ):
     bot.browser = Browser.CHROME
 
     # Uncomment to set the WebDriver path
-    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64\chromedriver.exe"
+    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
     #bot.driver_path ="/home/vitor/Documents/Projetos/Botcity_web/chromedriver-linux64/chromedriver"
 
     bot.browse("http://www.sintegra.es.gov.br/index.php")
@@ -249,22 +166,111 @@ def estado_mg(CNPJ):
         print(f'''{linha.text}
     ''')
 
-    
+def posta_arquivo_lorenzeti(login,senha):
+    logging.basicConfig(filename='posta_arquivo_lorenzeti.log', level=logging.INFO)
+    logger.info('Inicio')
+    pasta=r'P:\vitor'
+    logger.info(f'Pasta arquivo Origem {pasta}')
 
+    arquivos_para_upload =arquivos_modificados_hoje(pasta)
+
+    bot = WebBot()
+    bot.headless = False
+    bot.browser = Browser.CHROME
+    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
+    bot.browse("https://informa.lorenzetti.com.br/Login.aspx?ReturnUrl=%2f")
+    if not bot.find( "Login", matching=0.97, waiting_time=10000):
+        not_found("Login")
+    bot.click_relative(17, 43)
+    bot.paste(login)
+    bot.tab()
+    bot.paste(senha)
+    bot.enter()
+    bot.navigate_to('https://informa.lorenzetti.com.br/DocumentosEnviadosEDIListar.aspx?IDItem=31')
+
+    bot.sleep(500)
+
+    bot.find_element(selector='PHPrincipal_btnAdicionarDocumento',by=By.ID).click()
+    bot.sleep(500)
+
+    for arquivo in arquivos_para_upload:
+        bot.sleep(500)
+        input_file = bot.driver.find_element(By.ID, "PHPrincipal_arquivo_up")
+        input_file.send_keys(arquivo)
+        bot.key_enter()
+        bot.sleep(100)
+        bot.driver.find_element(By.ID, "PHPrincipal_btnSalvar").click()
+        logger.info(f'Enviado arquivo {arquivo}')
+        bot.back()
+        bot.sleep(1000)
+        bot.find_element(selector='PHPrincipal_btnAdicionarDocumento',by=By.ID).click()
+        
+
+    bot.close_page()
+    
+def baixa_arquivo_lorenzeti(login,senha):
+    logging.basicConfig(filename='baixa_arquivo_lorenzeti.log', level=logging.INFO)
+    logger.info('Inicio')
+    PASTA_DOWNLOAD = "C:\GitHub\Botcity_web\BotWeb"
+    PASTA_DESTINO = "P:\Lorenzetti\Receber"
+
+    bot = WebBot()
+    bot.headless = False
+    bot.browser = Browser.CHROME
+    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
+    bot.browse("https://informa.lorenzetti.com.br/Login.aspx?ReturnUrl=%2f")
+    if not bot.find( "Login", matching=0.97, waiting_time=10000):
+        not_found("Login")
+    bot.click_relative(17, 43)
+    bot.paste(login)
+    bot.tab()
+    bot.paste(senha)
+    bot.enter()
+    bot.navigate_to('https://informa.lorenzetti.com.br/DocumentosRecebidosEDIListar.aspx?IDItem=32')
+
+    nomes_na_tabela = [
+    elem.text for elem in bot.find_elements(
+        by=By.CSS_SELECTOR,
+        selector='span[id^="PHPrincipal_gridDocumentos_Descricao1_"]'
+    )
+    ]
+    
+    arquivos = bot.find_elements(selector='a.btn-action.glyphicons.download.btn-success',by=By.CSS_SELECTOR)
+
+
+    for inx,arquivo in enumerate(arquivos):
+        arquivo.click()
+        time.sleep(10)
+
+    bot.close_page()
+    
+    
+    for arquivo in os.listdir(PASTA_DOWNLOAD):
+        if  arquivo in nomes_na_tabela:
+            caminho_origem = os.path.join(PASTA_DOWNLOAD, arquivo)
+            caminho_destino = os.path.join(PASTA_DESTINO, arquivo)
+            shutil.move(caminho_origem, caminho_destino)
+            logger.info(f"Arquivo movido de: {caminho_origem} -> {caminho_destino}")
+            
+        logger.info('Finalizado')
+
+    
 
 def main():
     # Runner passes the server url, the id of the task being executed,
     # the access token and the parameters that this task receives (when applicable).
-    maestro = BotMaestroSDK.from_sys_args()
+    #maestro = BotMaestroSDK.from_sys_args()
     ## Fetch the BotExecution with details from the task, including parameters
-    execution = maestro.get_execution()
+    #execution = maestro.get_execution()
 
-    print(f"Task ID is: {execution.task_id}")
-    print(f"Task Parameters are: {execution.parameters}")
+    #print(f"Task ID is: {execution.task_id}")
+    #print(f"Task Parameters are: {execution.parameters}")
 
     #estado_es('33.048.204/0001-51') # 33.048.204/0001-51 aceita os caracteres
     #estado_sp('05328923000190') # 05.328.923/0001-90 exemplo nao aceita com . /-
     #estado_mg('42.274.696/0096-55') # mg 42.274.696/0096-55
+    #posta_arquivo_lorenzeti('login','senha')
+    baixa_arquivo_lorenzeti('login','senha')
 
 
 
@@ -274,3 +280,5 @@ def not_found(label):
 
 if __name__ == '__main__':
     main()
+
+
