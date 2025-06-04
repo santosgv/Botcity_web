@@ -1,7 +1,6 @@
 
 from botcity.web import WebBot, Browser, By
 import time
-import requests
 from botcity.web import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -37,139 +36,10 @@ def arquivos_modificados_hoje(diretorio):
     logger.info(f'Arquivos na data de {hoje}/{arquivos_hoje}')
     return arquivos_hoje
 
-def estado_es(CNPJ):
-    bot = WebBot()
-    # Configure whether or not to run on headless mode
-    bot.headless = False
-
-    # Uncomment to change the default Browser to Firefox
-    bot.browser = Browser.CHROME
-
-    # Uncomment to set the WebDriver path
-    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
-    #bot.driver_path ="/home/vitor/Documents/Projetos/Botcity_web/chromedriver-linux64/chromedriver"
-
-    bot.browse("http://www.sintegra.es.gov.br/index.php")
-
-    CNPJ = bot.find_element(selector='num_cnpj', by=By.ID)
-    CNPJ.click()
-    CNPJ.send_keys(f'{CNPJ}') # 33.048.204/0001-51 exemplo
-
-    time.sleep(25)
-
-    bot.find_element(selector='botaoConsultar', by=By.ID).click()
-
-
-    DADOS = bot.find_elements(selector='valor',by=By.CLASS_NAME)
-
-    for ind,x in enumerate(DADOS):
-        print(f'Index: {ind} | Texto: {x.text}')
-
-
-    # Wait 3 seconds before closing
-    bot.wait(3000)
-
-    # Finish and clean up the Web Browser
-    # You MUST invoke the stop_browser to avoid
-    # leaving instances of the webdriver open
-    #bot.stop_browser()
-
-    # Uncomment to mark this task as finished on BotMaestro
-    # maestro.finish_task(
-    #     task_id=execution.task_id,
-    #     status=AutomationTaskFinishStatus.SUCCESS,
-    #     message="Task Finished OK."
-    # )
-
-def estado_sp(CNPJ):
-    bot = WebBot()
-    # Configure whether or not to run on headless mode
-    bot.headless = False
-
-    # Uncomment to change the default Browser to Firefox
-    bot.browser = Browser.CHROME
-
-    # Uncomment to set the WebDriver path
-    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64\chromedriver.exe"
-    #bot.driver_path ="/home/vitor/Documents/Projetos/Botcity_web/chromedriver-linux64/chromedriver"
-
-    bot.browse("https://www.cadesp.fazenda.sp.gov.br/(S(d011sknoerhidcw141efdci0))/Pages/Cadastro/Consultas/ConsultaPublica/ConsultaPublica.aspx")
-
-    label = bot.find_element(selector='ctl00_conteudoPaginaPlaceHolder_filtroTabContainer_filtroEmitirCertidaoTabPanel_tipoFiltroDropDownList', by=By.ID)
-    
-    label = element_as_select(label)
-    label.select_by_value(value='1')
-
-    time.sleep(3)
-
-    input = bot.find_element(selector='//*[@id="ctl00_conteudoPaginaPlaceHolder_filtroTabContainer_filtroEmitirCertidaoTabPanel_valorFiltroTextBox"]',by=By.XPATH)
-    input.click()
-    input.send_keys(f'{CNPJ}')
-    
-    time.sleep(25)
-
-    bot.find_element(selector='ctl00$conteudoPaginaPlaceHolder$filtroTabContainer$filtroEmitirCertidaoTabPanel$consultaPublicaButton', by=By.NAME).click()
-
-
-    DADOS = bot.find_elements(selector='dadoDetalhe',by=By.CLASS_NAME)
-
-    for ind,x in enumerate(DADOS):
-        print(f'Index: {ind} | Texto: {x.text}')
-
-
-    # Wait 3 seconds before closing
-    bot.wait(3000)
-
-    # Finish and clean up the Web Browser
-    # You MUST invoke the stop_browser to avoid
-    # leaving instances of the webdriver open
-    #bot.stop_browser()
-
-    # Uncomment to mark this task as finished on BotMaestro
-    # maestro.finish_task(
-    #     task_id=execution.task_id,
-    #     status=AutomationTaskFinishStatus.SUCCESS,
-    #     message="Task Finished OK."
-    # )
-
-def estado_mg(CNPJ):
-    bot = WebBot()
-    # Configure whether or not to run on headless mode
-    bot.headless = False
-
-    # Uncomment to change the default Browser to Firefox
-    bot.browser = Browser.CHROME
-
-    # Uncomment to set the WebDriver path
-    bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64\chromedriver.exe"
-    #bot.driver_path ="/home/vitor/Documents/Projetos/Botcity_web/chromedriver-linux64/chromedriver"
-
-    bot.browse("https://dfe-portal.svrs.rs.gov.br/NFE/CCC")
-
-    label=bot.find_element(selector='CodUf',by=By.ID)
-    label = element_as_select(label)
-    label.select_by_value(value='31')
-    time.sleep(3)
-
-    form = bot.find_element(selector='CodInscrMf',by=By.ID)
-    form.click()
-    form.send_keys(CNPJ)
-
-    time.sleep(15)
-    bot.find_element(selector='BtnPesquisarCodInscrMf',by=By.ID).click()
-  
-    
-
-    DADOS = bot.find_elements("tabContribuinte", By.ID)
-
-    for linha in DADOS:
-        print(f'''{linha.text}
-    ''')
-
 def posta_arquivo_lorenzeti(login,senha):
     logging.basicConfig(filename='posta_arquivo_lorenzeti.log', level=logging.INFO)
     logger.info('Inicio')
-    pasta=r'P:\vitor'
+    pasta=r'P:\Lorenzetti'
     logger.info(f'Pasta arquivo Origem {pasta}')
 
     arquivos_para_upload =arquivos_modificados_hoje(pasta)
@@ -269,8 +139,8 @@ def main():
     #estado_es('33.048.204/0001-51') # 33.048.204/0001-51 aceita os caracteres
     #estado_sp('05328923000190') # 05.328.923/0001-90 exemplo nao aceita com . /-
     #estado_mg('42.274.696/0096-55') # mg 42.274.696/0096-55
-    #posta_arquivo_lorenzeti('login','senha')
-    baixa_arquivo_lorenzeti('login','senha')
+    #posta_arquivo_lorenzeti('017463456000352','loren537')
+    baixa_arquivo_lorenzeti('017463456000352','loren537')
 
 
 
