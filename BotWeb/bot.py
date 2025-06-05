@@ -27,12 +27,12 @@ def arquivos_modificados_hoje(diretorio):
 
     for arquivo in os.listdir(diretorio):
         caminho_completo = os.path.join(diretorio, arquivo)
-
+        print(arquivo)
         if os.path.isfile(caminho_completo):
             data_modificacao = datetime.date.fromtimestamp(os.path.getmtime(caminho_completo))
             if data_modificacao == hoje:
                 arquivos_hoje.append(caminho_completo)
-
+    
     logger.info(f'Arquivos na data de {hoje}/{arquivos_hoje}')
     return arquivos_hoje
 
@@ -45,7 +45,7 @@ def posta_arquivo_lorenzeti(login,senha):
     arquivos_para_upload =arquivos_modificados_hoje(pasta)
 
     bot = WebBot()
-    bot.headless = False
+    bot.headless = True
     bot.browser = Browser.CHROME
     bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
     bot.browse("https://informa.lorenzetti.com.br/Login.aspx?ReturnUrl=%2f")
@@ -74,7 +74,8 @@ def posta_arquivo_lorenzeti(login,senha):
         bot.back()
         bot.sleep(1000)
         bot.find_element(selector='PHPrincipal_btnAdicionarDocumento',by=By.ID).click()
-        
+
+    logger.info(f'Finalizado...')
 
     bot.close_page()
     
@@ -85,7 +86,7 @@ def baixa_arquivo_lorenzeti(login,senha):
     PASTA_DESTINO = "P:\Lorenzetti\Receber"
 
     bot = WebBot()
-    bot.headless = False
+    bot.headless = True
     bot.browser = Browser.CHROME
     bot.driver_path =r"C:\GitHub\Botcity_web\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe"
     bot.browse("https://informa.lorenzetti.com.br/Login.aspx?ReturnUrl=%2f")
@@ -122,25 +123,22 @@ def baixa_arquivo_lorenzeti(login,senha):
             shutil.move(caminho_origem, caminho_destino)
             logger.info(f"Arquivo movido de: {caminho_origem} -> {caminho_destino}")
             
-        logger.info('Finalizado')
+    logger.info('Finalizado')
 
     
 
 def main():
     # Runner passes the server url, the id of the task being executed,
     # the access token and the parameters that this task receives (when applicable).
-    #maestro = BotMaestroSDK.from_sys_args()
+    maestro = BotMaestroSDK.from_sys_args()
     ## Fetch the BotExecution with details from the task, including parameters
-    #execution = maestro.get_execution()
+    execution = maestro.get_execution()
 
-    #print(f"Task ID is: {execution.task_id}")
-    #print(f"Task Parameters are: {execution.parameters}")
+    print(f"Task ID is: {execution.task_id}")
+    print(f"Task Parameters are: {execution.parameters}")
 
-    #estado_es('33.048.204/0001-51') # 33.048.204/0001-51 aceita os caracteres
-    #estado_sp('05328923000190') # 05.328.923/0001-90 exemplo nao aceita com . /-
-    #estado_mg('42.274.696/0096-55') # mg 42.274.696/0096-55
-    #posta_arquivo_lorenzeti('017463456000352','loren537')
-    baixa_arquivo_lorenzeti('017463456000352','loren537')
+    #posta_arquivo_lorenzeti('@','@')
+    baixa_arquivo_lorenzeti('@','@')
 
 
 
